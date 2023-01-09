@@ -15,6 +15,8 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class PathFinder {
@@ -54,22 +56,38 @@ public class PathFinder {
         Set<Country> currentRoute = new LinkedHashSet<>();
         ShortestRoute shortestRoute = new ShortestRoute();
 
-        findRoute(destination, countryMap.get(origin), currentRoute, shortestRoute);
+        Country originCountry = countryMap.get(origin);
+        Country destinationCountry = countryMap.get(destination);
+
+        if (CollectionUtils.isNotEmpty(originCountry.getNeighbours()) && CollectionUtils.isNotEmpty(destinationCountry.getNeighbours())) {
+            findRoute(destination, countryMap.get(origin), currentRoute, shortestRoute, removeWithoutBorders(countryMap.values()));
+        }
 
         // get the shortest route
         return SetUtils.emptyIfNull(shortestRoute.getRoute());
     }
 
-    private void findRoute(String destination, Country currentCountry, Set<Country> route, ShortestRoute shortestRoute) {
+    private Collection<Country> removeWithoutBorders(Collection<Country> countries) {
+        return CollectionUtils.emptyIfNull(countries)
+                .parallelStream()
+                .filter(country -> CollectionUtils.isNotEmpty(country.getNeighbours()))
+                .collect(Collectors.toSet());
+    }
+
+    private void findRoute(String destination, Country currentCountry, Set<Country> route, ShortestRoute shortestRoute, Collection<Country> notVisited) {
         Set<Country> currentRoute = new LinkedHashSet<>(route);
         currentRoute.add(currentCountry);
+        notVisited.remove(currentCountry);
 
+        System.out.println("checking: " + currentCountry);
         if (!currentCountry.getCountryCode().equals(destination) && shortestRoute.isShorter(currentRoute)) {
 
-            CollectionUtils.subtract(currentCountry.getNeighbours(), currentRoute)// get rid of already visited countries
-                    .parallelStream()
-                    .forEach(neighbour -> findRoute(destination, neighbour, currentRoute, shortestRoute));
-        } else {
+            CollectionUtils.emptyIfNull(currentCountry.getNeighbours())
+                            .parallelStream()
+                            .filter(notVisited::contains)
+                            .forEach(neighbour -> findRoute(destination, neighbour, currentRoute, shortestRoute, new HashSet<>(notVisited)));
+
+        } else if (currentCountry.getCountryCode().equals(destination)) {
             // route to the destination was found
             shortestRoute.setRoute(currentRoute);
         }

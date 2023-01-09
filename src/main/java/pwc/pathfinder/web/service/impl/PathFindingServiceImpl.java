@@ -4,15 +4,10 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
 import pwc.pathfinder.dataloader.PathFinder;
 import pwc.pathfinder.dataloader.common.Country;
 import pwc.pathfinder.web.service.PathFindingService;
 
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
