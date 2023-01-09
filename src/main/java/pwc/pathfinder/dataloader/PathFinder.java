@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.springframework.stereotype.Component;
 import pwc.pathfinder.dataloader.common.Country;
 import pwc.pathfinder.dataloader.common.JsonCountry;
+import pwc.pathfinder.dataloader.common.ShortestRoute;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -49,36 +51,27 @@ public class PathFinder {
      * @return Shortest route, empty {@link Set<Country>} when no route found
      */
     public Set<Country> findShortestRoute(String origin, String destination) {
-        Set<Country> visitedCountries = new HashSet<>();
         Set<Country> currentRoute = new LinkedHashSet<>();
-        List<Set<Country>> allRoutes = new ArrayList<>();
+        ShortestRoute shortestRoute = new ShortestRoute();
 
-        findRoute(destination, visitedCountries, countryMap.get(origin), currentRoute, allRoutes);
+        findRoute(destination, countryMap.get(origin), currentRoute, shortestRoute);
 
-        // find the shortest route from all routes
-        return findShortest(allRoutes);
+        // get the shortest route
+        return SetUtils.emptyIfNull(shortestRoute.getRoute());
     }
 
-    private Set<Country> findShortest(List<Set<Country>> allRoutes) {
-        return allRoutes.parallelStream()
-                        .min(Comparator.comparingInt(Collection::size))
-                        .orElseGet(Collections::emptySet);
-    }
-
-    private void findRoute(String destination, Set<Country> visitedCountries, Country currentCountry, Set<Country> route, List<Set<Country>> allRoutes) {
+    private void findRoute(String destination, Country currentCountry, Set<Country> route, ShortestRoute shortestRoute) {
         Set<Country> currentRoute = new LinkedHashSet<>(route);
         currentRoute.add(currentCountry);
 
-        if (!currentCountry.getCountryCode().equals(destination)) {
-            visitedCountries.add(currentCountry);
+        if (!currentCountry.getCountryCode().equals(destination) && shortestRoute.isShorter(currentRoute)) {
 
-            // lets check all neighbours but skip already visited ones
-            for(Country neighbour : CollectionUtils.subtract(currentCountry.getNeighbours(), visitedCountries)) {
-                findRoute(destination, visitedCountries, neighbour, currentRoute, allRoutes);
-            }
+            CollectionUtils.subtract(currentCountry.getNeighbours(), currentRoute)// get rid of already visited countries
+                    .parallelStream()
+                    .forEach(neighbour -> findRoute(destination, neighbour, currentRoute, shortestRoute));
         } else {
             // route to the destination was found
-            allRoutes.add(currentRoute);
+            shortestRoute.setRoute(currentRoute);
         }
     }
 
@@ -105,4 +98,6 @@ public class PathFinder {
     private Country createCountry(String countryCode) {
         return new Country(countryCode);
     }
+
+
 }
