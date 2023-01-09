@@ -14,6 +14,8 @@ public class Country {
 
     private final String countryCode;
 
+    private final String region;
+
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Collection<Country> neighbours = new HashSet<>();

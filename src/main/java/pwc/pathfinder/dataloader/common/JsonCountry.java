@@ -19,6 +19,8 @@ public class JsonCountry {
 
     private List<String> borders;
 
+    private String region;
+
     @JsonCreator
     public JsonCountry(@JsonProperty(value = "cca3", required = true) String countryCode) {
         this.countryCode = countryCode;

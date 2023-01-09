@@ -15,6 +15,7 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,6 +23,7 @@ import java.util.stream.Stream;
 public class PathFinder {
 
     private Map<String, Country> countryMap;
+    private Map<String, Set<String>> regions;
 
     @Setter
     @Resource
@@ -59,18 +61,38 @@ public class PathFinder {
         Country originCountry = countryMap.get(origin);
         Country destinationCountry = countryMap.get(destination);
 
-        if (CollectionUtils.isNotEmpty(originCountry.getNeighbours()) && CollectionUtils.isNotEmpty(destinationCountry.getNeighbours())) {
-            findRoute(destination, countryMap.get(origin), currentRoute, shortestRoute, removeWithoutBorders(countryMap.values()));
+        if (routeExists(originCountry, destinationCountry)) {
+            Set<String> searchRegions = regionsToSearch(originCountry);
+            findRoute(destination, countryMap.get(origin), currentRoute, shortestRoute, removeNotAccessible(countryMap.values(), searchRegions));
         }
 
         // get the shortest route
         return SetUtils.emptyIfNull(shortestRoute.getRoute());
     }
 
-    private Collection<Country> removeWithoutBorders(Collection<Country> countries) {
+    private Set<String> regionsToSearch(Country origin) {
+        Set<String> regionsToSearch = new HashSet<>();
+        regionsToSearch.add(origin.getRegion());
+        regionsToSearch.addAll(regions.get(origin.getRegion()));
+
+        return regionsToSearch;
+    }
+
+    private boolean regionsConnected(Country origin, Country destination) {
+        return origin.getRegion().equals(destination.getRegion()) || regions.computeIfAbsent(origin.getRegion(), ignore -> new HashSet<>())
+                        .contains(destination.getRegion());
+    }
+
+    private boolean routeExists(Country origin, Country destination) {
+        return CollectionUtils.isNotEmpty(origin.getNeighbours()) &&
+                    CollectionUtils.isNotEmpty(destination.getNeighbours()) &&
+                        regionsConnected(origin, destination);
+    }
+
+    private Collection<Country> removeNotAccessible(Collection<Country> countries, Set<String> regions) {
         return CollectionUtils.emptyIfNull(countries)
                 .parallelStream()
-                .filter(country -> CollectionUtils.isNotEmpty(country.getNeighbours()))
+                .filter(country -> CollectionUtils.isNotEmpty(country.getNeighbours()) && regions.contains(country.getRegion()))
                 .collect(Collectors.toSet());
     }
 
@@ -79,7 +101,6 @@ public class PathFinder {
         currentRoute.add(currentCountry);
         notVisited.remove(currentCountry);
 
-        System.out.println("checking: " + currentCountry);
         if (!currentCountry.getCountryCode().equals(destination) && shortestRoute.isShorter(currentRoute)) {
 
             CollectionUtils.emptyIfNull(currentCountry.getNeighbours())
@@ -101,20 +122,37 @@ public class PathFinder {
     }
 
     private void initCountryMap(List<JsonCountry> jsonCountries) {
-        countryMap = new HashMap<>(jsonCountries.size());
+        countryMap = CollectionUtils.emptyIfNull(jsonCountries).parallelStream()
+                                    .map(this::createCountry)
+                                    .collect(Collectors.toMap(Country::getCountryCode, Function.identity()));
 
+        regions = new HashMap<>();
+
+        //@TODO refactor for better readability
+        Country country;
+        Country neighbour;
         for(JsonCountry jsonCountry : jsonCountries) {
-            Country country = countryMap.computeIfAbsent(jsonCountry.getCountryCode(), this::createCountry);
+            country = countryMap.get(jsonCountry.getCountryCode());
 
             // fill neighbours
             for(String border : jsonCountry.getBorders()) {
-                country.addNeighbour(countryMap.computeIfAbsent(border, this::createCountry));
+                neighbour = countryMap.get(border);
+                country.addNeighbour(neighbour);
+
+                if (!country.getRegion().equals(neighbour.getRegion())) {
+                    regions.computeIfAbsent(country.getRegion(), ignore -> new HashSet<>())
+                            .add(neighbour.getRegion());
+                }
+
             }
+
         }
+
+
     }
 
-    private Country createCountry(String countryCode) {
-        return new Country(countryCode);
+    private Country createCountry(JsonCountry country) {
+        return new Country(country.getCountryCode(), country.getRegion());
     }
 
 
