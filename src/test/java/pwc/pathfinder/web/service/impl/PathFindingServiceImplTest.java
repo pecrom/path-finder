@@ -23,9 +23,9 @@ public class PathFindingServiceImplTest {
         PathFinder pathFinder = mock(PathFinder.class);
 
         Set<Country> routeSet = new LinkedHashSet<>();
-        routeSet.add(new Country("ABC"));
-        routeSet.add(new Country("DEF"));
-        routeSet.add(new Country("GHI"));
+        routeSet.add(new Country("ABC", "Europe"));
+        routeSet.add(new Country("DEF", "Europe"));
+        routeSet.add(new Country("GHI", "Europe"));
 
         when(pathFinder.findShortestRoute(anyString(), anyString())).thenReturn(routeSet);
 

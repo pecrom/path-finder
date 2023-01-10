@@ -14,10 +14,15 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 public class PathFinder {
@@ -30,17 +35,18 @@ public class PathFinder {
     private InputStream countriesDataStream;
 
     @PostConstruct
-    public void initPaths() throws IOException {
-        loadPaths(countriesDataStream);
+    public void init() throws IOException {
+        load(countriesDataStream);
     }
 
-    private void loadPaths(InputStream dataStream) throws IOException {
+    private void load(InputStream dataStream) throws IOException {
         List<JsonCountry> jsonCountries = parseJson(dataStream);
-        initCountryMap(jsonCountries);
+        initCountryAndRegionsMap(jsonCountries);
     }
 
     /**
      * Check existence of country code
+     *
      * @param countryCode country code
      * @return true / false
      */
@@ -49,7 +55,7 @@ public class PathFinder {
     }
 
     /**
-     * Find shortest route from origin to destination
+     * Find the shortest route from origin to destination
      * @param origin origin country code
      * @param destination destination country code
      * @return Shortest route, empty {@link Set<Country>} when no route found
@@ -73,7 +79,7 @@ public class PathFinder {
     private Set<String> regionsToSearch(Country origin) {
         Set<String> regionsToSearch = new HashSet<>();
         regionsToSearch.add(origin.getRegion());
-        regionsToSearch.addAll(regions.get(origin.getRegion()));
+        regionsToSearch.addAll(regions.getOrDefault(origin.getRegion(), SetUtils.emptySet()));
 
         return regionsToSearch;
     }
@@ -83,6 +89,7 @@ public class PathFinder {
                         .contains(destination.getRegion());
     }
 
+    // check whether there is a theoretical route between origin and destination. Eg. neither of them is not an isolated island
     private boolean routeExists(Country origin, Country destination) {
         return CollectionUtils.isNotEmpty(origin.getNeighbours()) &&
                     CollectionUtils.isNotEmpty(destination.getNeighbours()) &&
@@ -121,39 +128,42 @@ public class PathFinder {
         return jsonMapper.readValue(dataStream, javaType);
     }
 
-    private void initCountryMap(List<JsonCountry> jsonCountries) {
+    private void initCountryAndRegionsMap(List<JsonCountry> jsonCountries) {
         countryMap = CollectionUtils.emptyIfNull(jsonCountries).parallelStream()
                                     .map(this::createCountry)
                                     .collect(Collectors.toMap(Country::getCountryCode, Function.identity()));
 
         regions = new HashMap<>();
 
-        //@TODO refactor for better readability
         Country country;
         Country neighbour;
         for(JsonCountry jsonCountry : jsonCountries) {
             country = countryMap.get(jsonCountry.getCountryCode());
 
-            // fill neighbours
+            // fill neighbours and regions
             for(String border : jsonCountry.getBorders()) {
                 neighbour = countryMap.get(border);
                 country.addNeighbour(neighbour);
 
-                if (!country.getRegion().equals(neighbour.getRegion())) {
-                    regions.computeIfAbsent(country.getRegion(), ignore -> new HashSet<>())
-                            .add(neighbour.getRegion());
-                }
-
+                addRegionConnection(country, neighbour);
             }
 
         }
+    }
 
+    private void addRegionConnection(Country country, Country neighbour) {
+        if (isNotSameRegion(country, neighbour)) {
+            regions.computeIfAbsent(country.getRegion(), ignore -> new HashSet<>())
+                    .add(neighbour.getRegion());
+        }
+    }
 
+    private boolean isNotSameRegion(Country country, Country neighbour) {
+        return !country.getRegion().equals(neighbour.getRegion());
     }
 
     private Country createCountry(JsonCountry country) {
         return new Country(country.getCountryCode(), country.getRegion());
     }
-
 
 }

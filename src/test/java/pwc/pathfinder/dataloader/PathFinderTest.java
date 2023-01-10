@@ -98,7 +98,7 @@ public class PathFinderTest {
             "\t\t\"callingCode\": [\"93\"],\n" +
             "\t\t\"capital\": [\"Kabul\"],\n" +
             "\t\t\"altSpellings\": [\"AF\", \"Af\\u0121\\u0101nist\\u0101n\"],\n" +
-            "\t\t\"region\": \"Asia\",\n" +
+            "\t\t\"region\": \"Americas\",\n" +
             "\t\t\"subregion\": \"Southern Asia\",\n" +
             "\t\t\"languages\": {\"prs\": \"Dari\", \"pus\": \"Pashto\", \"tuk\": \"Turkmen\"},\n" +
             "\t\t\"translations\": {\n" +
@@ -152,7 +152,7 @@ public class PathFinderTest {
             "\t\t\t\"Rep\\u00fablica de Angola\",\n" +
             "\t\t\t\"\\u0281\\u025bpublika de an'\\u0261\\u0254la\"\n" +
             "\t\t],\n" +
-            "\t\t\"region\": \"Africa\",\n" +
+            "\t\t\"region\": \"Americas\",\n" +
             "\t\t\"subregion\": \"Middle Africa\",\n" +
             "\t\t\"languages\": {\"por\": \"Portuguese\"},\n" +
             "\t\t\"translations\": {\n" +
@@ -294,7 +294,7 @@ public class PathFinderTest {
         PathFinder pathFinder = new PathFinder();
 
         pathFinder.setCountriesDataStream(createInputStream(VALID_MAP_DATA));
-        pathFinder.initPaths();
+        pathFinder.init();
     }
 
     @Test
@@ -306,7 +306,7 @@ public class PathFinderTest {
         PathFinder pathFinder = new PathFinder();
 
         pathFinder.setCountriesDataStream(mockedCountriesDataSteam);
-        assertThrows(IOException.class, () -> pathFinder.initPaths());
+        assertThrows(IOException.class, pathFinder::init);
     }
 
     @Test
@@ -316,7 +316,7 @@ public class PathFinderTest {
 
         pathFinder.setCountriesDataStream(createInputStream(INVALID_MAP_DATA));
 
-        assertThrows(JsonMappingException.class, () -> pathFinder.initPaths());
+        assertThrows(JsonMappingException.class, pathFinder::init);
     }
 
     @Test
@@ -325,7 +325,7 @@ public class PathFinderTest {
         PathFinder pathFinder = new PathFinder();
 
         pathFinder.setCountriesDataStream(createInputStream(VALID_MAP_DATA));
-        pathFinder.initPaths();
+        pathFinder.init();
 
         assertFalse(pathFinder.isNotCountryCodeExists(EXISTING_COUNTRY_CODE));
     }
@@ -336,7 +336,7 @@ public class PathFinderTest {
         PathFinder pathFinder = new PathFinder();
 
         pathFinder.setCountriesDataStream(createInputStream(VALID_MAP_DATA));
-        pathFinder.initPaths();
+        pathFinder.init();
 
         assertTrue(pathFinder.isNotCountryCodeExists(NON_EXISTING_COUNTRY_CODE));
     }
@@ -347,11 +347,11 @@ public class PathFinderTest {
         PathFinder pathFinder = new PathFinder();
 
         pathFinder.setCountriesDataStream(createInputStream(VALID_MAP_DATA));
-        pathFinder.initPaths();
+        pathFinder.init();
 
         Set<Country> shortestPath = pathFinder.findShortestRoute("ABW","AGO");
 
-        Country[] expected = new Country[]{new Country("ABW"), new Country("AFG"), new Country("AGO")};
+        Country[] expected = new Country[]{new Country("ABW", "Americas"), new Country("AFG", "Americas"), new Country("AGO", "Americas")};
 
         assertArrayEquals(expected, shortestPath.toArray());
     }
@@ -362,7 +362,7 @@ public class PathFinderTest {
         PathFinder pathFinder = new PathFinder();
 
         pathFinder.setCountriesDataStream(createInputStream(VALID_MAP_DATA));
-        pathFinder.initPaths();
+        pathFinder.init();
 
         Set<Country> shortestPath = pathFinder.findShortestRoute("ABW","AIA");
 
