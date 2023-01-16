@@ -1,17 +1,16 @@
 package pwc.pathfinder.web.rest;
 
-import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import pwc.pathfinder.dataloader.DataLoader;
 import pwc.pathfinder.web.service.PathFindingService;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 
@@ -23,8 +22,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringRunner.class)
-@WebMvcTest(RoutingRestController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 public class RoutingRestControllerTest {
 
     @Autowired
@@ -33,10 +32,13 @@ public class RoutingRestControllerTest {
     @MockBean
     private PathFindingService pathFindingService;
 
+    @MockBean
+    private DataLoader dataLoader;
+
     @Test
     @DisplayName("Check not found origin")
     public void notFoundOrigin() throws Exception {
-        when(pathFindingService.isNotCountryCodeExists("ABC")).thenReturn(true);
+        when(dataLoader.isNotCountryCodeExists("ABC")).thenReturn(true);
 
         mvc.perform(get(Constants.ROUTING_PATH + "/ABC/DEF")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -47,8 +49,8 @@ public class RoutingRestControllerTest {
     @DisplayName("Check not found destination")
     public void notFoundDestination() throws Exception {
 
-        when(pathFindingService.isNotCountryCodeExists("ABC")).thenReturn(false);
-        when(pathFindingService.isNotCountryCodeExists("DEF")).thenReturn(true);
+        when(dataLoader.isNotCountryCodeExists("ABC")).thenReturn(false);
+        when(dataLoader.isNotCountryCodeExists("DEF")).thenReturn(true);
 
         mvc.perform(get(Constants.ROUTING_PATH + "/ABC/DEF")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -59,7 +61,7 @@ public class RoutingRestControllerTest {
     @DisplayName("Check not found route")
     public void notFoundRoute() throws Exception {
 
-        when(pathFindingService.isNotCountryCodeExists(anyString())).thenReturn(false);
+        when(dataLoader.isNotCountryCodeExists(anyString())).thenReturn(false);
         when(pathFindingService.findShortestRoute(anyString(), anyString())).thenReturn(Collections.emptyList());
 
         mvc.perform(get(Constants.ROUTING_PATH + "/ABC/DEF")
@@ -76,7 +78,7 @@ public class RoutingRestControllerTest {
         returnedRoute.add("XYZ");
         returnedRoute.add("DEF");
 
-        when(pathFindingService.isNotCountryCodeExists(anyString())).thenReturn(false);
+        when(dataLoader.isNotCountryCodeExists(anyString())).thenReturn(false);
         when(pathFindingService.findShortestRoute(anyString(), anyString())).thenReturn(returnedRoute);
 
         mvc.perform(get(Constants.ROUTING_PATH + "/ABC/DEF")

@@ -1,15 +1,13 @@
-package pwc.pathfinder.dataloader.common;
+package pwc.pathfinder.common.dto;
 
 import lombok.*;
 
 import java.util.Collection;
 import java.util.HashSet;
 
-@Getter
-@Setter
+
+@Data
 @RequiredArgsConstructor
-@EqualsAndHashCode
-@ToString
 public class Country {
 
     private final String countryCode;
@@ -18,7 +16,7 @@ public class Country {
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
-    private Collection<Country> neighbours = new HashSet<>();
+    private final Collection<Country> neighbours = new HashSet<>();
 
     /**
      * Add neighbour country

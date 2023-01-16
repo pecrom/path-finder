@@ -1,24 +1,22 @@
 package pwc.pathfinder.web.service.impl;
 
-import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import pwc.pathfinder.dataloader.PathFinder;
-import pwc.pathfinder.dataloader.common.Country;
+import pwc.pathfinder.common.dto.Country;
 import pwc.pathfinder.web.service.PathFindingService;
+import pwc.pathfinder.web.service.impl.finder.PathFinder;
 
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
 
-@Setter
+
 @Service
+@RequiredArgsConstructor
 public class PathFindingServiceImpl implements PathFindingService {
 
-    @Autowired
-    private PathFinder pathFinder;
-
+    private final PathFinder pathFinder;
 
     /**
      * {@inheritDoc}
@@ -32,15 +30,4 @@ public class PathFindingServiceImpl implements PathFindingService {
                             .map(Country::getCountryCode)
                             .collect(Collectors.toCollection(LinkedList::new));
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Cacheable("isNotCountryCodeExists")
-    @Override
-    public boolean isNotCountryCodeExists(String countryCode) {
-        return pathFinder.isNotCountryCodeExists(countryCode);
-    }
-
-
 }
