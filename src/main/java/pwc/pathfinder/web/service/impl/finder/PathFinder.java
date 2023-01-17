@@ -39,7 +39,7 @@ public class PathFinder {
         Country originCountry = dataLoader.getCountry(origin);
         Country destinationCountry = dataLoader.getCountry(destination);
 
-        List<Country> foundWay = Collections.EMPTY_LIST;
+        List<Country> foundWay = Collections.emptyList();
         if (ObjectUtils.allNotNull(originCountry, destinationCountry) && routeExists(originCountry, destinationCountry)) {
             Set<String> searchRegions = regionsToSearch(originCountry);
 
